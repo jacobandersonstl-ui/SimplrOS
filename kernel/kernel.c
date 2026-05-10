@@ -15,6 +15,8 @@ static inline uint8_t inb(uint16_t port)
     return value;
 }
 
+static int shift_pressed = 0;
+
 static const char scancode_map[128] = {
     0, 0, '1','2','3','4','5','6','7','8','9','0','-','=','\b',
     0, 'q','w','e','r','t','y','u','i','o','p','[',']','\n',
@@ -23,24 +25,44 @@ static const char scancode_map[128] = {
     '*',0,' '
 };
 
+static const char scancode_map_shift[128] = {
+    0, 0, '!','@','#','$','%','^','&','*','(',')','_','+','\b',
+    0, 'Q','W','E','R','T','Y','U','I','O','P','{','}','\n',
+    0, 'A','S','D','F','G','H','J','K','L',':','"','~',
+    0, '|','Z','X','C','V','B','N','M','<','>','?',0,
+    '*',0,' '
+};
+
 char read_key(void)
 {
     uint8_t status;
     uint8_t scancode;
 
-    // Wait until keyboard buffer has data
     do {
         status = inb(0x64);
     } while ((status & 0x01) == 0);
 
     scancode = inb(0x60);
 
-    // Ignore key releases (high bit set)
+    // Left shift press=0x2A release=0xAA
+    // Right shift press=0x36 release=0xB6
+    if (scancode == 0x2A || scancode == 0x36) {
+        shift_pressed = 1;
+        return 0;
+    }
+    if (scancode == 0xAA || scancode == 0xB6) {
+        shift_pressed = 0;
+        return 0;
+    }
+
     if (scancode & 0x80) return 0;
 
-    // Look up ASCII value
-    if (scancode < 128)
-        return scancode_map[scancode];
+    if (scancode < 128) {
+        if (shift_pressed)
+            return scancode_map_shift[scancode];
+        else
+            return scancode_map[scancode];
+    }
 
     return 0;
 }
