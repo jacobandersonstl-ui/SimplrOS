@@ -11,7 +11,7 @@ SimplrOS is a lightweight, x86-64 Operating System built from scratch. This proj
 - Runtime: CPython 3.14 (Statically Compiled)
 
 ## Status
-[ ] Bootloader
+[X] Bootloader
 [ ] Kernel Entry
 [ ] Memory Manager
 [ ] UART driver
