@@ -1,0 +1,1 @@
+ei386pep.c: ./emulparams/i386pep.sh ./scripttempl/pep.sc ./emultempl/pep.em ./emultempl/emulation.em

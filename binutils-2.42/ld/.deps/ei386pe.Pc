@@ -1,0 +1,1 @@
+ei386pe.c: ./emulparams/i386pe.sh ./scripttempl/pe.sc ./emultempl/pe.em ./emultempl/emulation.em
