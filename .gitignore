@@ -1,0 +1,12 @@
+# EDK2 - external dependency, not our code
+edk2/
+
+# Binutils build - not our code
+binutils-2.42/
+binutils-2.42.tar.gz
+
+# Build artifacts
+*.o
+*.so
+*.efi
+*.a
