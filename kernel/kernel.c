@@ -1,5 +1,9 @@
 #include <stdint.h>
 #include "font.h"
+#include "ahci.h"
+#include "fsso.h"
+#include "pci.h"
+#include "fsso.c"
 
 typedef struct {
     uint64_t framebuffer;
@@ -37,33 +41,19 @@ char read_key(void)
 {
     uint8_t status;
     uint8_t scancode;
-
     do {
         status = inb(0x64);
     } while ((status & 0x01) == 0);
-
     scancode = inb(0x60);
-
-    // Left shift press=0x2A release=0xAA
-    // Right shift press=0x36 release=0xB6
-    if (scancode == 0x2A || scancode == 0x36) {
-        shift_pressed = 1;
-        return 0;
-    }
-    if (scancode == 0xAA || scancode == 0xB6) {
-        shift_pressed = 0;
-        return 0;
-    }
-
+    if (scancode == 0x2A || scancode == 0x36) { shift_pressed = 1; return 0; }
+    if (scancode == 0xAA || scancode == 0xB6) { shift_pressed = 0; return 0; }
     if (scancode & 0x80) return 0;
-
     if (scancode < 128) {
         if (shift_pressed)
             return scancode_map_shift[scancode];
         else
             return scancode_map[scancode];
     }
-
     return 0;
 }
 
@@ -80,24 +70,43 @@ void draw_char(volatile uint32_t *fb, uint32_t pixels_per_scanline,
     }
 }
 
+void draw_string(volatile uint32_t *fb, uint32_t pps,
+                 int x, int y, const char *str, uint32_t color)
+{
+    for (int i = 0; str[i]; i++) {
+        draw_char(fb, pps, x + i * 9, y, str[i], color);
+    }
+}
+
 void kernel_main(BootInfo *info)
 {
     volatile uint32_t *fb = (volatile uint32_t *)info->framebuffer;
 
-    // Fill screen black
     for (uint32_t i = 0; i < info->height * info->pixels_per_scanline; i++) {
         fb[i] = 0x000000;
     }
 
     // Draw header
-    const char *msg = "SimplrOS";
-    for (int i = 0; msg[i]; i++) {
-        draw_char(fb, info->pixels_per_scanline, i * 9, 10, msg[i], 0xFFFFFF);
+    draw_string(fb, info->pixels_per_scanline, 0, 0, "SimplrOS", 0xFFFFFF);
+
+    // Init AHCI
+    if (ahci_init() == 0) {
+        draw_string(fb, info->pixels_per_scanline, 0, 10, "AHCI: OK", 0x00FF00);
+    } else {
+        draw_string(fb, info->pixels_per_scanline, 0, 10, "AHCI: FAIL", 0xFF0000);
+    }
+
+    // Mount FSSO
+    FSSO_Filesystem fs;
+    if (fsso_mount(&fs) == 0) {
+        draw_string(fb, info->pixels_per_scanline, 0, 20, "FSSO: OK", 0x00FF00);
+    } else {
+        draw_string(fb, info->pixels_per_scanline, 0, 20, "FSSO: FAIL", 0xFF0000);
     }
 
     // Input loop
     int cursor_x = 0;
-    int cursor_y = 30;
+    int cursor_y = 40;
 
     while(1) {
         char c = read_key();
@@ -107,7 +116,6 @@ void kernel_main(BootInfo *info)
         } else if (c == '\b') {
             if (cursor_x > 0) {
                 cursor_x--;
-                // Erase the character by drawing a black rectangle
                 for (int row = 0; row < 8; row++) {
                     for (int col = 0; col < 8; col++) {
                         fb[(cursor_y + row) * info->pixels_per_scanline + (cursor_x * 9 + col)] = 0x000000;

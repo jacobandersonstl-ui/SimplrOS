@@ -1,16 +1,9 @@
 #include <string.h>
 #include "fsso.h"
 
-// Read a block from disk into buffer
-// For now this is a stub - we'll connect it to real disk I/O later
 static void read_block(uint32_t block_num, uint8_t *buffer) {
-	// TODO: replace with real AHCI disk read
-	// For now we'll use a memory-mapped disk for testing
-	extern uint8_t *fsso_disk;
-	uint8_t *src = fsso_disk + (block_num * FSSO_BLOCK_SIZE);
-	for (uint32_t i = 0; i < FSSO_BLOCK_SIZE; i++) {
-		buffer[i] = src[i];
-	}
+	uint64_t lba = (uint64_t)block_num * 2;
+	ahci_read(lba, 2, buffer);
 }
 
 int fsso_mount(FSSO_Filesystem *fs) {
@@ -52,29 +45,27 @@ int fsso_find_in_dir(FSSO_Filesystem *fs, uint32_t dir_inode, const char *name, 
 	if (fsso_read_inode(fs, dir_inode, &inode) != 0) {
 		return -1;
 	}
-
 	if (inode.type != FSSO_TYPE_DIR) {
 		return -2;
 	}
-
 	uint8_t buffer[FSSO_BLOCK_SIZE];
 	uint32_t entries_per_block = FSSO_BLOCK_SIZE / sizeof(FSSO_DirEntry);
-
 	for (int i = 0; i < FSSO_DIRECT_BLOCKS; i++) {
 		if (inode.direct[i] == 0) break;
-
 		read_block(inode.direct[i], buffer);
 		FSSO_DirEntry *entries = (FSSO_DirEntry *)buffer;
-
 		for (uint32_t j = 0; j < entries_per_block; j++) {
 			if (entries[j].inode == 0) continue;
-			if (strcmp(entries[j].name, name) == 0) {
+			int match = 1;
+			for (int k = 0; entries[j].name[k] || name[k]; k++) {
+				if (entries[j].name[k] != name[k]) { match = 0; break; }
+			}
+			if (match) {
 				*out_inode = entries[j].inode;
 				return 0;
 			}
 		}
 	}
-
 	return -3;
 }
 
