@@ -10,3 +10,9 @@ binutils-2.42.tar.gz
 *.so
 *.efi
 *.a
+kernel/kernel.elf
+tools/mkfsso
+tools/test_fsso
+kernel/kernel.elf
+tools/mkfsso
+tools/test_fsso
