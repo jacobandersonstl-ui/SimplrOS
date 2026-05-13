@@ -4,6 +4,8 @@
 #include "fsso.h"
 #include "pci.h"
 #include "fsso.c"
+#include "shell.h"
+#include "shell.c"
 
 typedef struct {
     uint64_t framebuffer;
@@ -86,50 +88,32 @@ void kernel_main(BootInfo *info)
         fb[i] = 0x000000;
     }
 
-    // Draw header
     draw_string(fb, info->pixels_per_scanline, 0, 0, "SimplrOS", 0xFFFFFF);
 
-    // Init AHCI
     if (ahci_init() == 0) {
         draw_string(fb, info->pixels_per_scanline, 0, 10, "AHCI: OK", 0x00FF00);
     } else {
         draw_string(fb, info->pixels_per_scanline, 0, 10, "AHCI: FAIL", 0xFF0000);
+        while(1) {}
     }
 
-    // Mount FSSO
     FSSO_Filesystem fs;
     if (fsso_mount(&fs) == 0) {
         draw_string(fb, info->pixels_per_scanline, 0, 20, "FSSO: OK", 0x00FF00);
     } else {
         draw_string(fb, info->pixels_per_scanline, 0, 20, "FSSO: FAIL", 0xFF0000);
+        while(1) {}
     }
 
-    // Input loop
     int cursor_x = 0;
     int cursor_y = 40;
 
-    while(1) {
-        char c = read_key();
-        if (c == '\n') {
-            cursor_x = 0;
-            cursor_y += 10;
-        } else if (c == '\b') {
-            if (cursor_x > 0) {
-                cursor_x--;
-                for (int row = 0; row < 8; row++) {
-                    for (int col = 0; col < 8; col++) {
-                        fb[(cursor_y + row) * info->pixels_per_scanline + (cursor_x * 9 + col)] = 0x000000;
-                    }
-                }
-            }
-        } else if (c != 0) {
-            draw_char(fb, info->pixels_per_scanline,
-                      cursor_x * 9, cursor_y, c, 0x00FF00);
-            cursor_x++;
-            if (cursor_x > 80) {
-                cursor_x = 0;
-                cursor_y += 10;
-            }
-        }
-    }
+    ShellContext ctx;
+    ctx.fb       = fb;
+    ctx.pps      = info->pixels_per_scanline;
+    ctx.cursor_x = &cursor_x;
+    ctx.cursor_y = &cursor_y;
+    ctx.fs       = &fs;
+
+    shell_run(&ctx);
 }

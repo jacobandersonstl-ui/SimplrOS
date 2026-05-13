@@ -1,7 +1,7 @@
 #include <string.h>
 #include "fsso.h"
 
-static void read_block(uint32_t block_num, uint8_t *buffer) {
+void read_block(uint32_t block_num, uint8_t *buffer) {
 	uint64_t lba = (uint64_t)block_num * 2;
 	ahci_read(lba, 2, buffer);
 }

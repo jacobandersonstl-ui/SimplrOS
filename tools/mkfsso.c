@@ -170,6 +170,15 @@ int main(int argc, char *argv[]) {
         }
         printf("Test file written\n");
 
+		char *py_script = "print('Hello from SimplrOS!')\n";
+        if (fsso_add_file(disk, "hello.py", (uint8_t *)py_script, 31) {
+                printf("Error: failed to add test file\n");
+                free(disk);
+                fclose(f);
+                return 1;
+        }
+        printf("Test file written\n");
+
 	// Write entire disk image to file
         size_t written = fwrite(disk, FSSO_BLOCK_SIZE, TOTAL_BLOCKS, f);
         if (written != TOTAL_BLOCKS) {
