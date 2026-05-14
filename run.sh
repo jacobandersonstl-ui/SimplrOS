@@ -12,7 +12,7 @@ cd ~/SimplrOS/kernel
 gcc -ffreestanding -fno-stack-protector -fno-pic \
     -mno-red-zone -nostdlib -nodefaultlibs \
     -static -T linker.ld -o kernel.elf \
-    kernel.c ahci.c pci.c
+    kernel.c ahci.c pci.c memory.c
 
 echo "Building disk image..."
 cd ~/SimplrOS

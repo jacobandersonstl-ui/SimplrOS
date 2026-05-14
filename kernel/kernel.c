@@ -6,6 +6,7 @@
 #include "fsso.c"
 #include "shell.h"
 #include "shell.c"
+#include "memory.h"
 
 typedef struct {
     uint64_t framebuffer;
@@ -82,6 +83,9 @@ void draw_string(volatile uint32_t *fb, uint32_t pps,
 
 void kernel_main(BootInfo *info)
 {
+
+    memory_init();
+
     volatile uint32_t *fb = (volatile uint32_t *)info->framebuffer;
 
     for (uint32_t i = 0; i < info->height * info->pixels_per_scanline; i++) {
